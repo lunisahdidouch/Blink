@@ -1,0 +1,11 @@
+#EXTM3U
+#EXT-X-PLAYLIST-TYPE:VOD
+#EXT-X-VERSION:7
+#EXT-X-TARGETDURATION:6
+#EXT-X-MEDIA-SEQUENCE:0
+#EXT-X-MAP:URI="hls1/main/-1.mp4?DeviceId=dev1&MediaSourceId=abc&PlaySessionId=p1&runtimeTicks=0&actualSegmentLengthTicks=0"
+#EXTINF:6.006000, nodesc
+hls1/main/0.mp4?DeviceId=dev1&MediaSourceId=abc&PlaySessionId=p1&runtimeTicks=0&actualSegmentLengthTicks=60060000
+#EXTINF:4.004000, nodesc
+hls1/main/1.mp4?DeviceId=dev1&MediaSourceId=abc&PlaySessionId=p1&runtimeTicks=60060000&actualSegmentLengthTicks=40040000
+#EXT-X-ENDLIST
