@@ -446,6 +446,16 @@ Also invalidate the TanStack Query keys `["item", itemId]` after a sync so open 
 
 ## 11. Spike notes (fill in during T0)
 
+**In-app result (2026-10-16, Windows 11, WebView2 155, `pnpm tauri dev`): PASS.** The axum loopback server (`http://127.0.0.1:{port}/{token}/…`) served files from the downloads root to the existing `VideoPlayer` on `/local/player` (origin `http://localhost:5173`):
+
+| File | Duration | Plays | Seek to 90 s |
+|---|---|---|---|
+| MP4 H.264/AAC (`media.mp4`) | 120 s | yes | yes (92.3 s after 3 s) |
+| MKV H.264/AAC (`media.mkv`, ffmpeg-muxed) | 120.02 s | yes | yes (92.9 s) |
+| local HLS VOD folder (`hls/index.m3u8`, TS segments) via react-player's `<hls-video>` (hls.js) | 120 s | yes | yes (92.5 s) |
+
+No CORS, mixed-content or Private Network Access problems. The `blinkmedia` URI-scheme fallback is not needed. In WebView2 155, MKV plays where Edge 131 did not (see below). With the MSVC Build Tools installed, `cargo test` passes all 38 Rust tests.
+
 **Status: partial (2026-10-15).** The in-app WebView2 check is blocked because this Windows machine has no MSVC C++ Build Tools, so nothing in `src-tauri` can link (`link.exe` not found). The installed rustc 1.83 is also too old for the current lockfile (`edition2024`); a side-by-side 1.90.0 toolchain was added.
 
 Pre-spike in Edge 131 (Chromium, headless; WebView2 runtime on this machine is 155). A Node stand-in for the planned loopback server, `http://127.0.0.1:{random}/{32-hex token}/...` with Range/206, `Access-Control-Allow-Origin: *` and the D4 MIME types, served a page from a different loopback origin (`http://localhost:5199`) to `<video crossOrigin="anonymous">` and to hls.js 1.6.15 (the version react-player uses):
