@@ -193,9 +193,17 @@ impl DownloadManager {
     fn load_root(&self, inner: &mut Inner, root: &Path) {
         inner.items.clear();
         inner.queue.clear();
-        for (_, mut m) in manifest::scan_all(root) {
+        for (dir, mut m) in manifest::scan_all(root) {
             if matches!(m.status, Status::Downloading | Status::Queued) {
                 m.status = Status::Paused;
+                // Progress is only persisted every few seconds; the .part file is the truth.
+                if m.mode == Mode::File {
+                    if let Some(p) = paths::safe_join(&dir, &m.media.path) {
+                        if let Ok(meta) = std::fs::metadata(file_job::part_path(&p)) {
+                            m.progress.bytes_done = meta.len();
+                        }
+                    }
+                }
                 self.persist(root, &m);
             }
             inner.items.insert(m.id.clone(), m);
@@ -946,9 +954,11 @@ mod tests {
         m.status = Status::Downloading;
         paths::resolve_root(&root).unwrap();
         manifest::write_atomic(&root.join("aa").join("cc"), &m).unwrap();
+        std::fs::write(root.join("aa/cc/media.mkv.part"), vec![0u8; 1234]).unwrap();
         let (mgr, _) = manager();
         mgr.init(root.clone()).await.unwrap();
         assert_eq!(mgr.list().await[0].status, Status::Paused);
+        assert_eq!(mgr.list().await[0].progress.bytes_done, 1234);
         assert_eq!(manifest::read(&root.join("aa/cc")).unwrap().status, Status::Paused);
         let info = mgr.init(root.clone()).await.unwrap();
         assert_eq!(info.root, root.to_string_lossy());

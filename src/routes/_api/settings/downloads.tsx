@@ -14,8 +14,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useSnackbar } from "notistack";
-import type React from "react";
-import { useState } from "react";
+// biome-ignore lint/style/useImportType: classic JSX runtime needs React in scope
+import React, { useState } from "react";
 import { useShallow } from "zustand/shallow";
 import "../settings.scss";
 import CircularPageLoadingAnimation from "@/components/circularPageLoadingAnimation";

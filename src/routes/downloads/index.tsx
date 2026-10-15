@@ -9,7 +9,7 @@ import IconButton from "@mui/material/IconButton";
 import LinearProgress from "@mui/material/LinearProgress";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useSnackbar } from "notistack";
 import React, { useEffect, useMemo, useState } from "react";
@@ -40,6 +40,7 @@ import {
 import { flushPendingPlaystate } from "@/utils/downloads/sync";
 import type { DownloadManifest } from "@/utils/downloads/types";
 import { localUrl } from "@/utils/downloads/urls";
+import { getUser } from "@/utils/storage/user";
 import { useApiInContext } from "@/utils/store/api";
 import { useBackdropStore } from "@/utils/store/backdrop";
 import { useCentralStore } from "@/utils/store/central";
@@ -218,6 +219,7 @@ function groupDownloaded(items: DownloadManifest[]) {
 		string,
 		{
 			name: string;
+			address: string;
 			series: Map<string, SeriesGroup>;
 			movies: DownloadManifest[];
 		}
@@ -227,6 +229,7 @@ function groupDownloaded(items: DownloadManifest[]) {
 		if (!server) {
 			server = {
 				name: m.serverName || m.serverAddress,
+				address: m.serverAddress,
 				series: new Map(),
 				movies: [],
 			};
@@ -264,6 +267,7 @@ function groupDownloaded(items: DownloadManifest[]) {
 	return [...servers.entries()].map(([id, s]) => ({
 		id,
 		name: s.name,
+		address: s.address,
 		movies: s.movies.sort((a, b) =>
 			(a.item.Name ?? "").localeCompare(b.item.Name ?? ""),
 		),
@@ -288,7 +292,11 @@ function DownloadsPage() {
 	const navigate = useNavigate();
 	const { enqueueSnackbar } = useSnackbar();
 	const api = useApiInContext((s) => s.api);
-	const user = useCentralStore((s) => s.currentUser);
+	const [user, fetchCurrentUser] = useCentralStore((s) => [
+		s.currentUser,
+		s.fetchCurrentUser,
+	]);
+	const queryClient = useQueryClient();
 	const ctx = usePlanContext();
 	const server = useCurrentServer();
 	const playDownloaded = usePlayDownloaded();
@@ -384,8 +392,12 @@ function DownloadsPage() {
 		mutationFn: async () => {
 			const ok = await ping.refetch();
 			if (!ok.data) throw new Error("The server is still unreachable");
-			if (api && user?.Id && server.data) {
-				await flushPendingPlaystate(api, server.data.id, user.Id);
+			if (!api) return;
+			// After an offline start the current user was never loaded.
+			if (!user?.Id) await fetchCurrentUser(api).catch(() => undefined);
+			const userId = user?.Id ?? (await getUser())?.Id;
+			if (userId && server.data) {
+				await flushPendingPlaystate(api, server.data.id, userId, queryClient);
 			}
 		},
 		onSuccess: () => navigate({ to: "/home" }),
@@ -476,7 +488,9 @@ function DownloadsPage() {
 				<section key={g.id} className="downloads-section">
 					{groups.length > 1 && (
 						<Typography variant="overline" className="downloads-server">
-							{g.name}
+							{groups.filter((o) => o.name === g.name).length > 1
+								? `${g.name} · ${g.address}`
+								: g.name}
 						</Typography>
 					)}
 					{g.series.map((s) => (

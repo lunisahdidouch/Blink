@@ -180,6 +180,19 @@ export function nextUserState(
 	};
 }
 
+/** Per-download queue so saves apply in order even when a server report is slow. */
+const saveQueues = new Map<string, Promise<void>>();
+
+function enqueueSave(id: string, task: () => Promise<void>): Promise<void> {
+	const previous = saveQueues.get(id) ?? Promise.resolve();
+	const next = previous.then(task, task);
+	saveQueues.set(
+		id,
+		next.catch(() => undefined),
+	);
+	return next;
+}
+
 async function saveLocal(
 	event: PlaystateEvent,
 	api: Api | undefined,
@@ -187,11 +200,10 @@ async function saveLocal(
 	id: string | null,
 ) {
 	if (!id) return;
-	const m = useDownloadsStore.getState().items[id];
-	if (!m) return;
 	if (event === "start") {
+		const m = useDownloadsStore.getState().items[id];
 		// Nothing changed locally yet; just tell the server if we can.
-		await reportLocalToServer("start", api, m, positionTicks);
+		if (m) await reportLocalToServer("start", api, m, positionTicks);
 		return;
 	}
 	const now = Date.now();
@@ -199,18 +211,27 @@ async function saveLocal(
 		return;
 	lastLocalSave = now;
 
-	const userState = nextUserState(
-		m.userState,
-		event,
-		positionTicks,
-		m.item.RunTimeTicks,
-	);
-	const reportTicks =
-		userState.played && userState.positionTicks === 0
-			? (m.item.RunTimeTicks ?? positionTicks)
-			: positionTicks;
-	if (await reportLocalToServer(event, api, m, reportTicks)) {
-		userState.pendingSync = false;
-	}
-	await useDownloadsStore.getState().updateUserState(id, userState);
+	await enqueueSave(id, async () => {
+		const store = useDownloadsStore.getState();
+		const m = store.items[id];
+		if (!m) return;
+		const userState = nextUserState(
+			m.userState,
+			event,
+			positionTicks,
+			m.item.RunTimeTicks,
+		);
+		// Local first, so nothing is lost if the server is slow or unreachable.
+		await store.updateUserState(id, userState);
+		const reportTicks =
+			userState.played && userState.positionTicks === 0
+				? (m.item.RunTimeTicks ?? positionTicks)
+				: positionTicks;
+		if (await reportLocalToServer(event, api, m, reportTicks)) {
+			const latest = useDownloadsStore.getState().items[id]?.userState;
+			if (latest?.lastPlayedAt === userState.lastPlayedAt) {
+				await store.updateUserState(id, { ...userState, pendingSync: false });
+			}
+		}
+	});
 }

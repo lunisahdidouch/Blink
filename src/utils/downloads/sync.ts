@@ -79,7 +79,23 @@ async function pushPosition(api: Api, userId: string, m: DownloadManifest) {
  * Push watch progress recorded offline for this server+user. Runs sequentially; any error
  * leaves `pendingSync` set for the next attempt.
  */
-export async function flushPendingPlaystate(
+let inFlight: Promise<number> | null = null;
+
+export function flushPendingPlaystate(
+	api: Api,
+	serverId: string,
+	userId: string,
+	queryClient?: QueryClient,
+): Promise<number> {
+	// App start and "Retry connection" can both trigger a sync; run one at a time.
+	if (inFlight) return inFlight;
+	inFlight = flush(api, serverId, userId, queryClient).finally(() => {
+		inFlight = null;
+	});
+	return inFlight;
+}
+
+async function flush(
 	api: Api,
 	serverId: string,
 	userId: string,

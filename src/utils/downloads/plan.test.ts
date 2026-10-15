@@ -6,6 +6,8 @@ import {
 	chooseMode,
 	containerExt,
 	estimateBytes,
+	hlsOnlyProfile,
+	isHlsUrl,
 	stripApiKey,
 	subtitleExt,
 } from "./plan";
@@ -178,5 +180,25 @@ describe("helpers", () => {
 			canDownload({ Policy: { EnableContentDownloading: false } } as never),
 		).toBe(false);
 		expect(canDownload(null)).toBe(false);
+	});
+});
+
+describe("HLS-only profile", () => {
+	it("drops progressive video transcoding profiles but keeps audio ones", () => {
+		const profile = hlsOnlyProfile({
+			TranscodingProfiles: [
+				{ Type: "Audio", Container: "aac", Protocol: "http" },
+				{ Type: "Video", Container: "ts", Protocol: "hls" },
+				{ Type: "Video", Container: "mkv" },
+				{ Type: "Video", Container: "webm", Protocol: "http" },
+			],
+		} as never);
+		expect(profile.TranscodingProfiles?.map((t) => t.Container)).toEqual(["aac", "ts"]);
+	});
+
+	it("recognises HLS transcoding URLs", () => {
+		expect(isHlsUrl("/videos/1/master.m3u8?PlaySessionId=p")).toBe(true);
+		expect(isHlsUrl("/videos/1/stream.mkv?x=1")).toBe(false);
+		expect(isHlsUrl(undefined)).toBe(false);
 	});
 });

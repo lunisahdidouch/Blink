@@ -164,6 +164,23 @@ export function estimateBytes(
 	return Math.round((bitrate / 8) * (runTimeTicks / 10_000_000) * 1.1);
 }
 
+/**
+ * Device profile for compatible-copy (HLS) downloads: video may only be transcoded to HLS, so
+ * the server can't pick a progressive container (e.g. Blink's MKV streaming profile).
+ */
+export function hlsOnlyProfile(profile: DeviceProfile): DeviceProfile {
+	return {
+		...profile,
+		TranscodingProfiles: (profile.TranscodingProfiles ?? []).filter(
+			(t) => t.Type !== "Video" || t.Protocol === "hls",
+		),
+	};
+}
+
+/** True when a TranscodingUrl points at an HLS playlist. */
+export const isHlsUrl = (url: string | null | undefined) =>
+	!!url && /\.m3u8(\?|$)/i.test(url);
+
 export interface PlanContext {
 	api: Api;
 	user: UserDto;
@@ -192,6 +209,7 @@ async function postedPlaybackInfo(
 	audioStreamIndex: number | undefined,
 	maxBitrate: number,
 	allowDirect: boolean,
+	deviceProfile: DeviceProfile = ctx.deviceProfile,
 ): Promise<PlaybackInfoResponse> {
 	const res = await getMediaInfoApi(ctx.api).getPostedPlaybackInfo({
 		itemId,
@@ -201,7 +219,7 @@ async function postedPlaybackInfo(
 			AudioStreamIndex: audioStreamIndex,
 			SubtitleStreamIndex: -1,
 			MaxStreamingBitrate: maxBitrate,
-			DeviceProfile: ctx.deviceProfile,
+			DeviceProfile: deviceProfile,
 			EnableDirectPlay: allowDirect,
 			EnableDirectStream: allowDirect,
 			EnableTranscoding: true,
@@ -295,6 +313,7 @@ export async function planDownload(
 			audioIndex,
 			qualityBitrate,
 			false,
+			hlsOnlyProfile(ctx.deviceProfile),
 		);
 		const s =
 			info.MediaSources?.find((x) => x.Id === mediaSourceId) ??
@@ -302,6 +321,11 @@ export async function planDownload(
 		if (info.ErrorCode || !s?.TranscodingUrl) {
 			throw new ServerRefusedError(
 				"The server can't make a compatible copy of this item (transcoding or remuxing is disabled for this account)",
+			);
+		}
+		if (!isHlsUrl(s.TranscodingUrl)) {
+			throw new ServerRefusedError(
+				"The server offered a stream that can't be saved for offline playback (not HLS)",
 			);
 		}
 		source = { ...firstSource, ...s, MediaStreams: firstSource.MediaStreams };
