@@ -459,3 +459,17 @@ Pre-spike in Edge 131 (Chromium, headless; WebView2 runtime on this machine is 1
 Conclusion so far: loopback HTTP from another local origin works with no mixed-content or CORS issues, so the URI-scheme fallback is not needed for MP4/HLS. MKV must be confirmed in WebView2 155. Until then, keep relying on `hasMkvSupport()` from the device profile, so non-playable MKV goes to `hls` mode automatically.
 
 Still to do here: run the same three files inside Blink's player via `pnpm tauri dev` once the build tools are installed.
+
+**Implementation status (2026-10-15)**
+
+| Task | Code | Verified |
+|---|---|---|
+| T1/T2 Rust (media server, manifest, file job, assets, manager, commands) | done | The modules and their unit tests type-check cleanly (`cargo check --tests` via a GNU-toolchain harness that includes the same source files minus `commands.rs`). `cargo test` and the Tauri glue (`commands.rs`, `main.rs`) have **not** been compiled or run: they need MSVC Build Tools. |
+| T3 TS data layer + Vitest | done | `pnpm test` (44 tests) and `pnpm build` pass |
+| T4 UI | done | builds; not exercised in the app |
+| T5 local playback | done | builds; streaming code paths keep the same payloads; not exercised in the app |
+| T6 offline start + sync | done | builds; not exercised in the app |
+| T7 HLS mode | done (Rust `hls_job.rs`, `plan.ts` HLS branch, dialog qualities) | parser/rewriter tests type-check; not run |
+| T8 CI + README | done | CI changes not run yet |
+
+Deviations: commands return `{ code, message }` errors (`ErrorInfo`) instead of plain strings so the UI can tell `insufficientSpace` and others apart. `downloads_cancel` and `downloads_delete` both discard the folder. There is an extra `downloads_open_folder` command for "Show in folder" and "Open folder". `rust-version` is 1.85 rather than 1.80, because the lockfile already needs edition 2024. The `_api` guard now pings once per session even when the api was restored from storage; before, an offline launch never reached the error page.

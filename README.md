@@ -42,6 +42,13 @@
   pnpm run tauri build
   ```
 
+- Running the tests:
+
+  ```shell
+  pnpm test
+  cargo test --manifest-path src-tauri/Cargo.toml
+  ```
+
 - other commands can be found inside the `"scripts"` inside [package.json](https://github.com/prayag17/Blink/blob/main/package.json)
 
 ## 💻 Contribution
@@ -61,6 +68,17 @@
 - Queue playback support 
 - Intro Skip button using [jumoog/Intro-Skipper](https://github.com/jumoog/intro-skipper) plugin
 - Mediasegment support
+- Offline downloads for episodes and movies
+
+## ⬇️ Downloads
+
+Episodes and movies can be downloaded and played in Blink's own player, with or without a connection to the server.
+
+- **Downloading:** use the download button on an episode, movie or season. Downloads run one at a time and can be paused, resumed (also after restarting Blink), cancelled or deleted from the **Downloads** page.
+- **Quality:** *Auto* keeps the original file when Blink can play it and otherwise asks the server for a compatible copy (HLS). *Original* always keeps the original file. *High*, *Medium* and *Low* download a smaller compatible copy. Your server administrator must allow downloads for your account; compatible copies also need transcoding or remuxing permission.
+- **Where files live:** by default in Blink's local data folder, in a `downloads` subfolder (Windows: `%LOCALAPPDATA%\com.blink.prayag17\downloads`). Each item gets a folder `{serverId}/{itemId}/` with a `manifest.json`, the media and its subtitles and images.
+- **Changing the folder:** *Settings → Downloads → Change folder…* moves existing downloads to the new folder. If you pick a folder that already contains other files, Blink creates a `Blink Downloads` subfolder inside it. Pause active downloads first.
+- **Offline:** if the server can't be reached at startup, Blink opens the Downloads page. Watch progress made offline syncs back to the server the next time you're signed in.
 
 ## 📷 Screenshots
 
