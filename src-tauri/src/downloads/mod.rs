@@ -963,10 +963,19 @@ mod tests {
         let (url, _) = start(Behaviour::Slow, payload()).await;
         mgr.enqueue(job(&url, "dd")).await.unwrap();
         wait_status(&mgr, "aa:dd", Status::Downloading).await;
-        tokio::time::sleep(Duration::from_millis(100)).await;
-        mgr.pause("aa:dd").await.unwrap();
-        let paused = wait_status(&mgr, "aa:dd", Status::Paused).await;
+        // Wait for real progress (the worker may be slow to start under parallel tests).
         let part = tmp.path().join("dl/aa/dd/media.mkv.part");
+        for _ in 0..500 {
+            if part.exists() {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+        tokio::time::sleep(Duration::from_millis(300)).await;
+        mgr.pause("aa:dd").await.unwrap();
+        // Let the worker see the cancel and write its final progress.
+        tokio::time::sleep(Duration::from_millis(200)).await;
+        let paused = wait_status(&mgr, "aa:dd", Status::Paused).await;
         assert!(part.exists());
         assert!(paused.progress.bytes_done > 0);
 
