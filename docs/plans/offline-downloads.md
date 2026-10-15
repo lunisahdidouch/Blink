@@ -470,16 +470,42 @@ Conclusion so far: loopback HTTP from another local origin works with no mixed-c
 
 Still to do here: run the same three files inside Blink's player via `pnpm tauri dev` once the build tools are installed.
 
-**Implementation status (2026-10-15)**
+**QA matrix (§10), 2026-10-16, Windows 11 + WebView2 155, `pnpm tauri dev`, local Jellyfin 12.1.0 (+ 10.11.11 as the second server).** Driven through the real UI over CDP. Test media: ffmpeg-generated 2-minute clips, plus a 1.6 GB, 2-hour MKV.
+
+| Case | Result |
+|---|---|
+| MP4 H.264/AAC episode, Auto | PASS: `file` mode, byte-identical to the server file; external SRT saved as VTT and shown; plays offline; seek OK |
+| MKV H.264/AAC + ASS subs | PASS: `file` mode on Windows; ASS renders via JASSUB from the local file; switching to the VTT track works |
+| MKV H.264 + AC3 | PASS (differs from the plan's expectation): WebView2 here decodes AC3/E-AC3, so Auto picks `file` and audio decodes. With a fixed quality (Low) it downloads as `hls` (12 segments, local VOD playlist), plays with audio, seeks; the server's transcode files are removed afterwards (ActiveEncodings cleanup) |
+| HEVC 10-bit | PASS: this device direct-plays HEVC, so `file`; decodes |
+| SRT external + embedded PGS | SRT PASS. PGS not tested: ffmpeg can't author PGS; needs a real file |
+| Multi-audio, pick second track | PASS: forced `hls`; downloaded audio is the second (Japanese) track (verified by tone frequency) |
+| Kill app at ~40 %, relaunch, Resume | PASS: status `paused` after relaunch; "Resume all" continues from the `.part` (first progress 847 MB of 1.6 GB); final file byte-identical |
+| Pull network mid-download | PASS: Jellyfin killed at 34 %: retries with backoff, `failed/network` after ~70 s; Retry after restart continues from 1.29 GB; byte-identical |
+| Download season | PASS: "Queued 3 episodes"; never more than one `downloading` |
+| Server down at launch | PASS: lands on `/downloads?offline=true` with the offline banner; local artwork; app bar OK |
+| Watch 50 % offline, reconnect, relaunch | PASS: server shows 61.2 s / 51 % with the offline timestamp (via `updateItemUserData`). Also passes via "Retry connection" |
+| Delete a download | PASS: folder removed, button back to "Download" |
+| Change folder with completed downloads | PASS: non-empty target, so `Blink Downloads` subfolder created and all items moved; folder kept after relaunch; 2 h movie plays/seeks from the new folder (folder dialog bypassed: `moveRoot` called directly) |
+| Two servers | PASS: same item ids on both, so separate `server:item` downloads; grouped by server; progress syncs only to the matching server |
+| Normal streaming playback | PASS: MKV direct play + ASS via JASSUB from the server, seek, stop report reached the server |
+
+Bugs found and fixed during QA: HLS downloads got a progressive MKV stream on 12.1 (now an HLS-only device profile); an offline exit could lose the position to an earlier slow save (saves are now queued and local-first); "Retry connection" after an offline start didn't sync (user never loaded); paused rows showed stale bytes after a restart.
+
+Not covered: PGS subtitles, media-segment intro skip (the test server has no segments), "Original" + not direct-playable (`mayNotPlay` warning, since everything direct-plays on this PC), macOS/Linux smoke tests.
+
+Unrelated issue seen: the existing add-server and login forms reload the page on submit. `preventDefault()` runs inside an async mutation, too late. That's outside downloads, so it's left as a follow-up.
+
+**Implementation status (updated 2026-10-16)**
 
 | Task | Code | Verified |
 |---|---|---|
-| T1/T2 Rust (media server, manifest, file job, assets, manager, commands) | done | The modules and their unit tests type-check cleanly (`cargo check --tests` via a GNU-toolchain harness that includes the same source files minus `commands.rs`). `cargo test` and the Tauri glue (`commands.rs`, `main.rs`) have **not** been compiled or run: they need MSVC Build Tools. |
+| T1/T2 Rust (media server, manifest, file job, assets, manager, commands) | done | `cargo test`: 38 pass (MSVC, 2026-10-16); exercised end to end in the QA run above |
 | T3 TS data layer + Vitest | done | `pnpm test` (44 tests) and `pnpm build` pass |
-| T4 UI | done | builds; not exercised in the app |
-| T5 local playback | done | builds; streaming code paths keep the same payloads; not exercised in the app |
-| T6 offline start + sync | done | builds; not exercised in the app |
-| T7 HLS mode | done (Rust `hls_job.rs`, `plan.ts` HLS branch, dialog qualities) | parser/rewriter tests type-check; not run |
+| T4 UI | done | QA run above |
+| T5 local playback | done | QA run above |
+| T6 offline start + sync | done | QA run above |
+| T7 HLS mode | done (Rust `hls_job.rs`, `plan.ts` HLS branch, dialog qualities) | Rust tests + QA run above (after the HLS-only profile fix) |
 | T8 CI + README | done | CI changes not run yet |
 
 Deviations: commands return `{ code, message }` errors (`ErrorInfo`) instead of plain strings so the UI can tell `insufficientSpace` and others apart. `downloads_cancel` and `downloads_delete` both discard the folder. There is an extra `downloads_open_folder` command for "Show in folder" and "Open folder". `rust-version` is 1.85 rather than 1.80, because the lockfile already needs edition 2024. The `_api` guard now pings once per session even when the api was restored from storage; before, an offline launch never reached the error page.
