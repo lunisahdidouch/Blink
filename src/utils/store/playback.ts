@@ -11,12 +11,14 @@ import { getMediaSegmentsApi } from "@jellyfin/sdk/lib/utils/api/media-segments-
 import { getPlaystateApi } from "@jellyfin/sdk/lib/utils/api/playstate-api";
 import { getUserApi } from "@jellyfin/sdk/lib/utils/api/user-api";
 import { WebviewWindow as appWindow } from "@tauri-apps/api/webviewWindow";
+import { playLocalFromQueue } from "../downloads/localPlayback";
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
 import { shallow } from "zustand/shallow";
 import { createWithEqualityFn } from "zustand/traditional";
 import { secToTicks, ticksToSec } from "../date/time";
 import getSubtitle from "../methods/getSubtitles";
+import { pickAudio, pickSubtitle } from "../methods/trackSelection";
 import playbackProfile from "../playback-profiles";
 import {
 	getPlayerMuted,
@@ -29,7 +31,18 @@ import type subtitlePlaybackInfo from "../types/subtitlePlaybackInfo";
 import { generateAudioStreamUrl, playAudio } from "./audioPlayback";
 import useQueue, { setQueue } from "./queue";
 
+export type PlaybackOrigin = "server" | "local";
+
 type PlaybackStoreState = {
+	/**
+	 * "server" = streaming from Jellyfin, "local" = a downloaded copy served by the
+	 * loopback media server. Player code branches on this only where it talks to the server.
+	 */
+	origin: PlaybackOrigin;
+	/** Download id (`serverId:itemId`) of the item playing when origin is "local". */
+	localDownloadId: string | null;
+	/** Download ids of the local queue, in queue order. */
+	localQueue: string[];
 	mediaSource: {
 		videoTrack: number;
 		audioTrack: number;
@@ -281,6 +294,9 @@ export const usePlaybackStore = create<
 	PlaybackStoreState & PlaybackStoreActions
 >()(
 	immer((set, get) => ({
+		origin: "server",
+		localDownloadId: null,
+		localQueue: [],
 		mediaSource: {
 			videoTrack: undefined!,
 			audioTrack: undefined!,
@@ -684,8 +700,14 @@ export const playItem = (args: {
 	userId: string;
 	queueItems: BaseItemDto[];
 	queueItemIndex: number;
+	origin?: PlaybackOrigin;
+	localDownloadId?: string | null;
+	localQueue?: string[];
 }) => {
 	usePlaybackStore.setState((state) => {
+		state.origin = args.origin ?? "server";
+		state.localDownloadId = args.localDownloadId ?? null;
+		state.localQueue = args.localQueue ?? [];
 		state.mediaSource = args.mediaSource;
 		state.playbackStream = args.playbackStream;
 		state.playsessionId = args.playsessionId;
@@ -741,43 +763,20 @@ export const initializePlayback = async (args: {
 	}
 
 	// Subtitle
-	const userSubtitleLanguagePreference =
-		currentUser?.Configuration?.SubtitleLanguagePreference;
 	const allSubtitles = source.MediaStreams?.filter(
 		(stream) => stream.Type === "Subtitle",
 	);
-	const preferredSubtitle =
-		allSubtitles?.find(
-			(sub) => sub.Language === userSubtitleLanguagePreference,
-		) || null;
-
 	const subtitle = getSubtitle(
-		subtitleStreamIndex ??
-			preferredSubtitle?.Index ??
-			source.DefaultSubtitleStreamIndex ??
-			-1,
+		pickSubtitle(source, currentUser?.Configuration, subtitleStreamIndex),
 		source.MediaStreams,
 	);
 
 	// Audio
-	const userAudioLanguagePreference =
-		currentUser?.Configuration?.AudioLanguagePreference;
 	const allAudioTracks = source.MediaStreams?.filter(
 		(value) => value.Type === "Audio",
 	);
-	const preferredAudioTrack =
-		allAudioTracks?.find(
-			(track) => track.Language === userAudioLanguagePreference,
-		) ||
-		allAudioTracks?.find((track) => track.IsDefault) ||
-		allAudioTracks?.[0];
-
 	const audio = {
-		track:
-			audioStreamIndex ??
-			preferredAudioTrack?.Index ??
-			source.DefaultAudioStreamIndex ??
-			0,
+		track: pickAudio(source, currentUser?.Configuration, audioStreamIndex),
 		allTracks: allAudioTracks,
 	};
 
@@ -854,6 +853,9 @@ export const playItemFromQueue = async (
 	userId: string | undefined,
 	api: Api | undefined,
 ) => {
+	if (usePlaybackStore.getState().origin === "local") {
+		return playLocalFromQueue(index, api);
+	}
 	if (!api) {
 		console.error("Unable to play item from from queue. No API provided");
 		return;
@@ -1017,6 +1019,10 @@ export const toggleSubtitleTrack = () => {
  */
 export const changeAudioTrack = async (trackIndex: number, api: Api) => {
 	const prevState = usePlaybackStore.getState();
+	if (prevState.origin === "local") {
+		// Audio is fixed at download time (D11).
+		return;
+	}
 
 	if (!prevState.metadata.item?.Id) {
 		throw new Error("item is undefined in changeAudioTrack");

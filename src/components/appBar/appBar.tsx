@@ -23,6 +23,7 @@ const HIDDEN_PATHS = [
 	"/setup",
 	"/server",
 	"/player",
+	"/local",
 	"/error",
 	"/settings",
 	"/library",

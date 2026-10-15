@@ -7,7 +7,9 @@ import {
 	ListItemText,
 } from "@mui/material";
 import React from "react";
+import { getPlaybackImageUrl } from "@/utils/downloads/localPlayback";
 import getImageUrlsApi from "@/utils/methods/getImageUrlsApi";
+import { usePlaybackStore } from "@/utils/store/playback";
 import { useApiInContext } from "@/utils/store/api";
 import { getTypeIcon } from "../utils/iconsCollection";
 
@@ -34,9 +36,11 @@ const QueueListItem = ({
 	sx,
 }: QueueListItemProps) => {
 	const api = useApiInContext((s) => s.api);
+	const isLocal = usePlaybackStore((s) => s.origin === "local");
 
-	const imageUrl =
-		api &&
+	const imageUrl = isLocal
+		? getPlaybackImageUrl(queueItem, api)
+		: api &&
 		queueItem.Id &&
 		(queueItem.ImageTags?.Primary
 			? getImageUrlsApi(api).getItemImageUrlById(queueItem.Id, "Primary", {

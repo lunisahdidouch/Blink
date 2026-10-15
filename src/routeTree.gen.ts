@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ApiRouteImport } from './routes/_api'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DownloadsIndexRouteImport } from './routes/downloads/index'
+import { Route as LocalPlayerRouteImport } from './routes/local/player'
 import { Route as ErrorCodeRouteImport } from './routes/error/$code'
 import { Route as ApiSettingsRouteImport } from './routes/_api/settings'
 import { Route as ApiLoginRouteImport } from './routes/_api/login'
@@ -22,6 +24,7 @@ import { Route as SetupServerListRouteImport } from './routes/setup/server.list'
 import { Route as SetupServerErrorRouteImport } from './routes/setup/server.error'
 import { Route as SetupServerAddRouteImport } from './routes/setup/server.add'
 import { Route as ApiSettingsPreferencesRouteImport } from './routes/_api/settings/preferences'
+import { Route as ApiSettingsDownloadsRouteImport } from './routes/_api/settings/downloads'
 import { Route as ApiSettingsAboutRouteImport } from './routes/_api/settings/about'
 import { Route as ApiSeriesIdRouteImport } from './routes/_api/series/$id'
 import { Route as ApiPlaylistIdRouteImport } from './routes/_api/playlist/$id'
@@ -46,6 +49,16 @@ const ApiRoute = ApiRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DownloadsIndexRoute = DownloadsIndexRouteImport.update({
+  id: '/downloads/',
+  path: '/downloads/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocalPlayerRoute = LocalPlayerRouteImport.update({
+  id: '/local/player',
+  path: '/local/player',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ErrorCodeRoute = ErrorCodeRouteImport.update({
@@ -101,6 +114,11 @@ const SetupServerAddRoute = SetupServerAddRouteImport.update({
 const ApiSettingsPreferencesRoute = ApiSettingsPreferencesRouteImport.update({
   id: '/preferences',
   path: '/preferences',
+  getParentRoute: () => ApiSettingsRoute,
+} as any)
+const ApiSettingsDownloadsRoute = ApiSettingsDownloadsRouteImport.update({
+  id: '/downloads',
+  path: '/downloads',
   getParentRoute: () => ApiSettingsRoute,
 } as any)
 const ApiSettingsAboutRoute = ApiSettingsAboutRouteImport.update({
@@ -190,6 +208,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof ApiLoginRouteWithChildren
   '/settings': typeof ApiSettingsRouteWithChildren
   '/error/$code': typeof ErrorCodeRoute
+  '/local/player': typeof LocalPlayerRoute
+  '/downloads/': typeof DownloadsIndexRoute
   '/album/$id': typeof ApiAlbumIdRoute
   '/artist/$id': typeof ApiArtistIdRoute
   '/boxset/$id': typeof ApiBoxsetIdRoute
@@ -204,6 +224,7 @@ export interface FileRoutesByFullPath {
   '/playlist/$id': typeof ApiPlaylistIdRoute
   '/series/$id': typeof ApiSeriesIdRoute
   '/settings/about': typeof ApiSettingsAboutRoute
+  '/settings/downloads': typeof ApiSettingsDownloadsRoute
   '/settings/preferences': typeof ApiSettingsPreferencesRoute
   '/setup/server/add': typeof SetupServerAddRoute
   '/setup/server/error': typeof SetupServerErrorRoute
@@ -220,6 +241,8 @@ export interface FileRoutesByTo {
   '/login': typeof ApiLoginRouteWithChildren
   '/settings': typeof ApiSettingsRouteWithChildren
   '/error/$code': typeof ErrorCodeRoute
+  '/local/player': typeof LocalPlayerRoute
+  '/downloads': typeof DownloadsIndexRoute
   '/album/$id': typeof ApiAlbumIdRoute
   '/artist/$id': typeof ApiArtistIdRoute
   '/boxset/$id': typeof ApiBoxsetIdRoute
@@ -234,6 +257,7 @@ export interface FileRoutesByTo {
   '/playlist/$id': typeof ApiPlaylistIdRoute
   '/series/$id': typeof ApiSeriesIdRoute
   '/settings/about': typeof ApiSettingsAboutRoute
+  '/settings/downloads': typeof ApiSettingsDownloadsRoute
   '/settings/preferences': typeof ApiSettingsPreferencesRoute
   '/setup/server/add': typeof SetupServerAddRoute
   '/setup/server/error': typeof SetupServerErrorRoute
@@ -252,6 +276,8 @@ export interface FileRoutesById {
   '/_api/login': typeof ApiLoginRouteWithChildren
   '/_api/settings': typeof ApiSettingsRouteWithChildren
   '/error/$code': typeof ErrorCodeRoute
+  '/local/player': typeof LocalPlayerRoute
+  '/downloads/': typeof DownloadsIndexRoute
   '/_api/album/$id': typeof ApiAlbumIdRoute
   '/_api/artist/$id': typeof ApiArtistIdRoute
   '/_api/boxset/$id': typeof ApiBoxsetIdRoute
@@ -266,6 +292,7 @@ export interface FileRoutesById {
   '/_api/playlist/$id': typeof ApiPlaylistIdRoute
   '/_api/series/$id': typeof ApiSeriesIdRoute
   '/_api/settings/about': typeof ApiSettingsAboutRoute
+  '/_api/settings/downloads': typeof ApiSettingsDownloadsRoute
   '/_api/settings/preferences': typeof ApiSettingsPreferencesRoute
   '/setup/server/add': typeof SetupServerAddRoute
   '/setup/server/error': typeof SetupServerErrorRoute
@@ -284,6 +311,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/error/$code'
+    | '/local/player'
+    | '/downloads/'
     | '/album/$id'
     | '/artist/$id'
     | '/boxset/$id'
@@ -298,6 +327,7 @@ export interface FileRouteTypes {
     | '/playlist/$id'
     | '/series/$id'
     | '/settings/about'
+    | '/settings/downloads'
     | '/settings/preferences'
     | '/setup/server/add'
     | '/setup/server/error'
@@ -314,6 +344,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/settings'
     | '/error/$code'
+    | '/local/player'
+    | '/downloads'
     | '/album/$id'
     | '/artist/$id'
     | '/boxset/$id'
@@ -328,6 +360,7 @@ export interface FileRouteTypes {
     | '/playlist/$id'
     | '/series/$id'
     | '/settings/about'
+    | '/settings/downloads'
     | '/settings/preferences'
     | '/setup/server/add'
     | '/setup/server/error'
@@ -345,6 +378,8 @@ export interface FileRouteTypes {
     | '/_api/login'
     | '/_api/settings'
     | '/error/$code'
+    | '/local/player'
+    | '/downloads/'
     | '/_api/album/$id'
     | '/_api/artist/$id'
     | '/_api/boxset/$id'
@@ -359,6 +394,7 @@ export interface FileRouteTypes {
     | '/_api/playlist/$id'
     | '/_api/series/$id'
     | '/_api/settings/about'
+    | '/_api/settings/downloads'
     | '/_api/settings/preferences'
     | '/setup/server/add'
     | '/setup/server/error'
@@ -375,6 +411,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ApiRoute: typeof ApiRouteWithChildren
   ErrorCodeRoute: typeof ErrorCodeRoute
+  LocalPlayerRoute: typeof LocalPlayerRoute
+  DownloadsIndexRoute: typeof DownloadsIndexRoute
   SetupServerAddRoute: typeof SetupServerAddRoute
   SetupServerErrorRoute: typeof SetupServerErrorRoute
   SetupServerListRoute: typeof SetupServerListRoute
@@ -394,6 +432,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/downloads/': {
+      id: '/downloads/'
+      path: '/downloads'
+      fullPath: '/downloads/'
+      preLoaderRoute: typeof DownloadsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/local/player': {
+      id: '/local/player'
+      path: '/local/player'
+      fullPath: '/local/player'
+      preLoaderRoute: typeof LocalPlayerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/error/$code': {
@@ -471,6 +523,13 @@ declare module '@tanstack/react-router' {
       path: '/preferences'
       fullPath: '/settings/preferences'
       preLoaderRoute: typeof ApiSettingsPreferencesRouteImport
+      parentRoute: typeof ApiSettingsRoute
+    }
+    '/_api/settings/downloads': {
+      id: '/_api/settings/downloads'
+      path: '/downloads'
+      fullPath: '/settings/downloads'
+      preLoaderRoute: typeof ApiSettingsDownloadsRouteImport
       parentRoute: typeof ApiSettingsRoute
     }
     '/_api/settings/about': {
@@ -606,12 +665,14 @@ const ApiLoginRouteWithChildren = ApiLoginRoute._addFileChildren(
 
 interface ApiSettingsRouteChildren {
   ApiSettingsAboutRoute: typeof ApiSettingsAboutRoute
+  ApiSettingsDownloadsRoute: typeof ApiSettingsDownloadsRoute
   ApiSettingsPreferencesRoute: typeof ApiSettingsPreferencesRoute
   ApiSettingsChangeServerIndexRoute: typeof ApiSettingsChangeServerIndexRoute
 }
 
 const ApiSettingsRouteChildren: ApiSettingsRouteChildren = {
   ApiSettingsAboutRoute: ApiSettingsAboutRoute,
+  ApiSettingsDownloadsRoute: ApiSettingsDownloadsRoute,
   ApiSettingsPreferencesRoute: ApiSettingsPreferencesRoute,
   ApiSettingsChangeServerIndexRoute: ApiSettingsChangeServerIndexRoute,
 }
@@ -666,6 +727,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ApiRoute: ApiRouteWithChildren,
   ErrorCodeRoute: ErrorCodeRoute,
+  LocalPlayerRoute: LocalPlayerRoute,
+  DownloadsIndexRoute: DownloadsIndexRoute,
   SetupServerAddRoute: SetupServerAddRoute,
   SetupServerErrorRoute: SetupServerErrorRoute,
   SetupServerListRoute: SetupServerListRoute,

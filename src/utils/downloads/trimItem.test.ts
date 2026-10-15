@@ -17,7 +17,11 @@ describe("trimItem", () => {
 		Trickplay: { ms1: { 320: { Width: 320 } } },
 		People: [{ Name: "Someone" }],
 		MediaSources: [
-			{ Id: "ms1", Container: "mkv", MediaStreams: [{ Type: "Video", Index: 0 }] },
+			{
+				Id: "ms1",
+				Container: "mkv",
+				MediaStreams: [{ Type: "Video", Index: 0 }],
+			},
 			{ Id: "ms2", Container: "mp4", MediaStreams: [] },
 		],
 	} as unknown as BaseItemDto;
@@ -32,7 +36,9 @@ describe("trimItem", () => {
 	});
 
 	it("keeps only the chosen media source with its streams", () => {
-		expect(trimItem(item, "ms2").MediaSources?.map((s) => s.Id)).toEqual(["ms2"]);
+		expect(trimItem(item, "ms2").MediaSources?.map((s) => s.Id)).toEqual([
+			"ms2",
+		]);
 		const t = trimItem(item, "unknown");
 		expect(t.MediaSources?.map((s) => s.Id)).toEqual(["ms1"]);
 		expect(t.MediaSources?.[0].MediaStreams).toHaveLength(1);

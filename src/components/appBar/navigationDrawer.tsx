@@ -62,6 +62,13 @@ export const NavigationDrawer = ({ open, onClose }: NavigationDrawerProps) => {
                     primary="Home"
                     onClick={onClose}
                 />
+                <ListItemLink
+                    className="library-drawer-item"
+                    to="/downloads"
+                    icon="download"
+                    primary="Downloads"
+                    onClick={onClose}
+                />
                 {libraries.isSuccess &&
                     libraries.data?.Items?.map((library) => (
                         <ListItemLink

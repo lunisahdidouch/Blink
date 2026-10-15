@@ -90,6 +90,12 @@ function SettingsRoute() {
 						primary="Servers"
 						className="settings-sidebar-list-item"
 					/>
+					<ListItemLink
+						to="/settings/downloads"
+						icon="download"
+						primary="Downloads"
+						className="settings-sidebar-list-item"
+					/>
 
 					<Typography
 						variant="overline"

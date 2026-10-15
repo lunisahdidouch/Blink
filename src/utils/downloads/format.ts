@@ -2,7 +2,8 @@ import { DownloadCommandError } from "./commands";
 import type { DownloadErrorCode, DownloadManifest } from "./types";
 
 export function formatBytes(bytes: number | null | undefined): string {
-	if (bytes === null || bytes === undefined || !Number.isFinite(bytes)) return "–";
+	if (bytes === null || bytes === undefined || !Number.isFinite(bytes))
+		return "–";
 	const units = ["B", "KB", "MB", "GB", "TB"];
 	let v = bytes;
 	let i = 0;
@@ -51,7 +52,12 @@ export function manifestTitle(m: DownloadManifest): string {
 
 export function percentDone(
 	m: DownloadManifest,
-	live?: { bytesDone: number; bytesTotal: number | null; segmentsDone: number | null; segmentsTotal: number | null },
+	live?: {
+		bytesDone: number;
+		bytesTotal: number | null;
+		segmentsDone: number | null;
+		segmentsTotal: number | null;
+	},
 ): number | null {
 	const p = live ?? m.progress;
 	if (m.mode === "hls" && p.segmentsTotal) {

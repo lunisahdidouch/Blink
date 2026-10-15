@@ -1,7 +1,8 @@
 import { Button, Typography } from "@mui/material";
-import { Link, createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { relaunch } from "@tauri-apps/plugin-process";
 import React from "react";
+import { hasCompletedDownloads } from "@/utils/downloads/store";
 
 export const Route = createFileRoute("/error/$code")({
 	component: ErrorRoute,
@@ -9,6 +10,7 @@ export const Route = createFileRoute("/error/$code")({
 
 function ErrorRoute() {
 	const errorCode = Route.useParams({ select: (s) => s.code });
+	const navigate = useNavigate();
 	switch (errorCode) {
 		case "101":
 			return (
@@ -42,6 +44,16 @@ function ErrorRoute() {
 						<Button variant="contained" onClick={async () => await relaunch()}>
 							Restart Blink
 						</Button>
+						{hasCompletedDownloads() && (
+							<Button
+								variant="contained"
+								onClick={() =>
+									navigate({ to: "/downloads", search: { offline: true } })
+								}
+							>
+								Open Downloads
+							</Button>
+						)}
 					</div>
 				</div>
 			);

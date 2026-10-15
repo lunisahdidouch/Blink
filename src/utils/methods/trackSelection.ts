@@ -15,12 +15,9 @@ export function pickAudio(
 ): number {
 	const all = source.MediaStreams?.filter((s) => s.Type === "Audio") ?? [];
 	if (requested !== undefined && requested !== null) return requested;
+	// Same comparison streaming has always used (an unset preference matches an unset language).
 	const preferred =
-		all.find(
-			(t) =>
-				!!userConfig?.AudioLanguagePreference &&
-				t.Language === userConfig.AudioLanguagePreference,
-		) ||
+		all.find((t) => t.Language === userConfig?.AudioLanguagePreference) ||
 		all.find((t) => t.IsDefault) ||
 		all[0];
 	return preferred?.Index ?? source.DefaultAudioStreamIndex ?? 0;
@@ -43,14 +40,14 @@ export function pickSubtitle(
 	const exists = (i: number | null | undefined) =>
 		i !== undefined && i !== null && all.some((s) => s.Index === i);
 	if (requested !== undefined && requested !== null) {
+		if (!available) return requested;
 		return requested === -1 || exists(requested) ? requested : -1;
 	}
 	const preferred = all.find(
-		(s) =>
-			!!userConfig?.SubtitleLanguagePreference &&
-			s.Language === userConfig.SubtitleLanguagePreference,
+		(s) => s.Language === userConfig?.SubtitleLanguagePreference,
 	);
 	if (preferred?.Index !== undefined) return preferred.Index;
+	if (!available) return source.DefaultSubtitleStreamIndex ?? -1;
 	if (exists(source.DefaultSubtitleStreamIndex))
 		return source.DefaultSubtitleStreamIndex as number;
 	return -1;

@@ -37,7 +37,12 @@ describe("pickSubtitle", () => {
 		expect(pickSubtitle(source, null, undefined, onlyEng)).toBe(-1);
 		expect(pickSubtitle(source, null, 4, onlyEng)).toBe(-1);
 		expect(
-			pickSubtitle(source, { SubtitleLanguagePreference: "eng" }, undefined, onlyEng),
+			pickSubtitle(
+				source,
+				{ SubtitleLanguagePreference: "eng" },
+				undefined,
+				onlyEng,
+			),
 		).toBe(3);
 	});
 });

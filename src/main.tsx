@@ -11,6 +11,8 @@ import {
 } from "./utils/store/api";
 import { CentralProvider, useCentralStore } from "./utils/store/central";
 import { useDownloadsStore } from "./utils/downloads/store";
+import { flushPendingPlaystate } from "./utils/downloads/sync";
+import { getDefaultServer } from "./utils/storage/servers";
 import {
 	getDownloadSettings,
 	setDownloadSetting,
@@ -75,6 +77,18 @@ function ProviderWrapper() {
 			fetchCurrentUser(api);
 		}
 	}, [api, user, fetchCurrentUser]);
+	// Push watch progress recorded during offline playback (D10, §7).
+	useEffect(() => {
+		if (!api?.accessToken || !user?.Id) return;
+		const userId = user.Id;
+		getDefaultServer()
+			.then((serverId) =>
+				serverId
+					? flushPendingPlaystate(api, serverId, userId, queryClient)
+					: 0,
+			)
+			.catch((error) => console.warn("Playstate sync failed", error));
+	}, [api?.accessToken, user?.Id]);
 	useEffect(() => {
 		if (api) {
 			console.log(`API is set - Route ${window.location.pathname}`);

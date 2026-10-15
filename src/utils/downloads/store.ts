@@ -55,7 +55,10 @@ type DownloadsActions = {
 		serverId: string | null | undefined,
 		itemId: string | null | undefined,
 	) => DownloadManifest | undefined;
-	completedForSeries: (serverId: string, seriesId: string) => DownloadManifest[];
+	completedForSeries: (
+		serverId: string,
+		seriesId: string,
+	) => DownloadManifest[];
 };
 
 // Module-level so React StrictMode double effects / HMR never register twice.
@@ -194,7 +197,9 @@ export const useDownloadsStore = create<DownloadsState & DownloadsActions>()(
 		},
 
 		getByItem: (serverId, itemId) =>
-			serverId && itemId ? get().items[downloadId(serverId, itemId)] : undefined,
+			serverId && itemId
+				? get().items[downloadId(serverId, itemId)]
+				: undefined,
 
 		completedForSeries: (serverId, seriesId) =>
 			Object.values(get().items).filter(

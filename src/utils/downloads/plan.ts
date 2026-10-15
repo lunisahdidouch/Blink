@@ -232,7 +232,8 @@ export async function planDownload(
 	const firstSource =
 		item.MediaSources?.find((s) => s.Id === options.mediaSourceId) ??
 		item.MediaSources?.[0];
-	if (!firstSource?.Id) throw new ServerRefusedError("This item has no media source");
+	if (!firstSource?.Id)
+		throw new ServerRefusedError("This item has no media source");
 	const mediaSourceId = firstSource.Id;
 	const audioIndex = pickAudio(
 		firstSource,
@@ -240,7 +241,8 @@ export async function planDownload(
 		options.audioStreamIndex,
 	);
 	const audioTracks =
-		firstSource.MediaStreams?.filter((s: MediaStream) => s.Type === "Audio") ?? [];
+		firstSource.MediaStreams?.filter((s: MediaStream) => s.Type === "Audio") ??
+		[];
 	const nonDefaultAudio =
 		audioTracks.length > 1 && audioIndex !== defaultAudioIndex(firstSource);
 
@@ -260,7 +262,9 @@ export async function planDownload(
 		true,
 	);
 	if (probe.ErrorCode) {
-		throw new ServerRefusedError(`The server refused playback (${probe.ErrorCode})`);
+		throw new ServerRefusedError(
+			`The server refused playback (${probe.ErrorCode})`,
+		);
 	}
 	const probeSource =
 		probe.MediaSources?.find((s) => s.Id === mediaSourceId) ??
@@ -303,9 +307,10 @@ export async function planDownload(
 		source = { ...firstSource, ...s, MediaStreams: firstSource.MediaStreams };
 		mediaUrl = stripApiKey(`${api.basePath}${s.TranscodingUrl}`);
 		playSessionId = info.PlaySessionId ?? null;
-		maxBitrate = options.quality === "auto" || options.quality === "original"
-			? null
-			: qualityBitrate;
+		maxBitrate =
+			options.quality === "auto" || options.quality === "original"
+				? null
+				: qualityBitrate;
 	}
 
 	const { subtitles, assets } = buildSubtitles(api, itemId, firstSource);
@@ -321,7 +326,10 @@ export async function planDownload(
 	if (item.ImageTags?.Primary) {
 		imageRefs.primary = "images/primary.jpg";
 		assets.push({
-			url: images.getItemImageUrlById(itemId, "Primary", { ...imageSpec, maxWidth: 800 }),
+			url: images.getItemImageUrlById(itemId, "Primary", {
+				...imageSpec,
+				maxWidth: 800,
+			}),
 			relPath: imageRefs.primary,
 		});
 	}
@@ -329,7 +337,10 @@ export async function planDownload(
 	if (isEpisode && item.SeriesId && item.SeriesPrimaryImageTag) {
 		imageRefs.seriesPrimary = "images/series-primary.jpg";
 		assets.push({
-			url: images.getItemImageUrlById(item.SeriesId, "Primary", { ...imageSpec, maxWidth: 800 }),
+			url: images.getItemImageUrlById(item.SeriesId, "Primary", {
+				...imageSpec,
+				maxWidth: 800,
+			}),
 			relPath: imageRefs.seriesPrimary,
 		});
 	}
@@ -341,14 +352,18 @@ export async function planDownload(
 	if (backdropId && (isEpisode ? item.ParentBackdropImageTags?.length : true)) {
 		imageRefs.backdrop = "images/backdrop.jpg";
 		assets.push({
-			url: images.getItemImageUrlById(backdropId, "Backdrop", { ...imageSpec, maxWidth: 1920 }),
+			url: images.getItemImageUrlById(backdropId, "Backdrop", {
+				...imageSpec,
+				maxWidth: 1920,
+			}),
 			relPath: imageRefs.backdrop,
 		});
 	}
 
 	let mediaSegments: MediaSegmentDtoQueryResult | null = null;
 	try {
-		mediaSegments = (await getMediaSegmentsApi(api).getItemSegments({ itemId })).data;
+		mediaSegments = (await getMediaSegmentsApi(api).getItemSegments({ itemId }))
+			.data;
 	} catch {
 		// Older servers don't have the endpoint.
 		mediaSegments = null;
@@ -356,7 +371,8 @@ export async function planDownload(
 
 	const audioStream = audioTracks.find((t) => t.Index === audioIndex);
 	const videoStream = firstSource.MediaStreams?.find((s) => s.Type === "Video");
-	const container = mode === "file" ? containerExt(firstSource.Container) : "hls";
+	const container =
+		mode === "file" ? containerExt(firstSource.Container) : "hls";
 	const manifest: DownloadManifest = {
 		schemaVersion: 1,
 		id: downloadId(server.id, itemId),
@@ -391,7 +407,12 @@ export async function planDownload(
 				: null,
 		status: "queued",
 		error: null,
-		progress: { bytesDone: 0, bytesTotal: null, segmentsDone: null, segmentsTotal: null },
+		progress: {
+			bytesDone: 0,
+			bytesTotal: null,
+			segmentsDone: null,
+			segmentsTotal: null,
+		},
 		userState: {
 			positionTicks: item.UserData?.PlaybackPositionTicks ?? 0,
 			played: !!item.UserData?.Played,

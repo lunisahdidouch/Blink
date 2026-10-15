@@ -21,7 +21,7 @@ export const useCurrentServer = () =>
 		queryKey: ["downloads", "currentServer"],
 		queryFn: async () => {
 			const id = await getDefaultServer();
-			return (await getServer(id)) ?? null;
+			return (await getServer(id ?? null)) ?? null;
 		},
 		networkMode: "always",
 		staleTime: 30_000,

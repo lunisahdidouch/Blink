@@ -11,6 +11,7 @@ import Typography from "@mui/material/Typography";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "motion/react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import DownloadButton from "@/components/buttons/downloadButton";
 import LikeButton from "@/components/buttons/likeButton";
 import MarkPlayedButton from "@/components/buttons/markPlayedButton";
 import PlayButton from "@/components/buttons/playButton";
@@ -307,6 +308,10 @@ function EpisodeTitlePage() {
 								queryKey={["item", id]}
 								isPlayed={item.data.UserData?.Played}
 								userId={user?.Id}
+							/>
+							<DownloadButton
+								item={item.data}
+								defaultAudioTrack={selectedAudioTrack}
 							/>
 						</div>
 					</div>

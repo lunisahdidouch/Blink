@@ -1,7 +1,10 @@
 import { load } from "@tauri-apps/plugin-store";
 import type { DownloadQuality } from "../downloads/types";
 
-const DownloadsStore = await load(".downloads.dat", { autoSave: true, defaults: {} });
+const DownloadsStore = await load(".downloads.dat", {
+	autoSave: true,
+	defaults: {},
+});
 
 export interface DownloadSettings {
 	/** null = default folder under the app's local data dir */

@@ -2,7 +2,7 @@ import { Box, Button, IconButton, Typography } from "@mui/material";
 import { AnimatePresence, motion } from "motion/react";
 import React, { useEffect, useMemo, useState } from "react";
 import { useShallow } from "zustand/shallow";
-import getImageUrlsApi from "@/utils/methods/getImageUrlsApi";
+import { getPlaybackImageUrl } from "@/utils/downloads/localPlayback";
 import { useApiInContext } from "@/utils/store/api";
 import { usePlaybackStore } from "@/utils/store/playback";
 import useQueue from "@/utils/store/queue";
@@ -18,8 +18,10 @@ const UpNextFlyout = () => {
 		isUserHovering,
 		isUserSeeking,
 		isPlayerPlaying,
+		isLocal,
 	} = usePlaybackStore(
 		useShallow((state) => ({
+			isLocal: state.origin === "local",
 			activeSegmentId: state.activeSegmentId,
 			currentSegmemtIndex: state.nextSegmentIndex - 1,
 			mediaSegments: state.metadata.mediaSegments,
@@ -50,7 +52,7 @@ const UpNextFlyout = () => {
 	const api = useApiInContext((s) => s.api);
 
 	if (
-		!api ||
+		(!api && !isLocal) ||
 		!activeSegmentId ||
 		mediaSegments?.Items?.[currentSegmemtIndex].Type !== "Outro" ||
 		isHidden
@@ -101,8 +103,7 @@ const UpNextFlyout = () => {
 					}}
 				>
 					<img
-						src={getImageUrlsApi(api).getItemImageUrlById(item.Id, "Primary", {
-							tag: item.ImageTags?.Primary,
+						src={getPlaybackImageUrl(item, api, {
 							quality: 90,
 							fillWidth: 320,
 						})}
