@@ -10,6 +10,11 @@ import {
 	useApiInContext,
 } from "./utils/store/api";
 import { CentralProvider, useCentralStore } from "./utils/store/central";
+import { useDownloadsStore } from "./utils/downloads/store";
+import {
+	getDownloadSettings,
+	setDownloadSetting,
+} from "./utils/storage/downloads";
 
 const queryClient = new QueryClient({
 	defaultOptions: {
@@ -94,8 +99,26 @@ function ProviderWrapper() {
 	);
 }
 
+/**
+ * Load downloads before the first render so route guards can use them offline.
+ * A failure here must never keep the app from starting.
+ */
+const initDownloads = async () => {
+	try {
+		const { root } = await getDownloadSettings();
+		await useDownloadsStore.getState().init(root);
+		const resolved = useDownloadsStore.getState().root;
+		// A non-empty foreign folder resolves to its "Blink Downloads" subfolder.
+		if (root && resolved && resolved !== root) {
+			await setDownloadSetting("root", resolved);
+		}
+	} catch (error) {
+		console.error("Downloads are unavailable:", error);
+	}
+};
+
 const init = async () => {
-	const initialApi = await initializeApi();
+	const [initialApi] = await Promise.all([initializeApi(), initDownloads()]);
 
 	ReactDOM.createRoot(document.getElementById("root")!).render(
 		<React.StrictMode>

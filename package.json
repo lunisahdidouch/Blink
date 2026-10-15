@@ -6,6 +6,7 @@
 	"scripts": {
 		"dev": "vite --force && tsr watch",
 		"build": "vite build",
+		"test": "vitest run",
 		"preview": "vite preview",
 		"tauri": "tauri",
 		"lint": "biome check src/**/*",
@@ -92,7 +93,8 @@
 		"prop-types": "^15.8.1",
 		"sass": "^1.97.3",
 		"vite": "^7.3.1",
-		"vite-plugin-wasm": "^3.5.0"
+		"vite-plugin-wasm": "^3.5.0",
+		"vitest": "^5.0.5"
 	},
 	"license": "GPL-3.0-only"
 }
