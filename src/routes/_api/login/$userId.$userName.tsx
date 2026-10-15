@@ -177,7 +177,11 @@ function LoginUser() {
 				</div>
 
 				<form
-					onSubmit={(e) => handleLogin.mutate(e)}
+					onSubmit={(e) => {
+						// Prevent the native submit now; the mutation runs asynchronously.
+						e.preventDefault();
+						handleLogin.mutate(e);
+					}}
 					style={{
 						width: "100%",
 						display: "flex",

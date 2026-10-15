@@ -103,7 +103,11 @@ function ServerSetup() {
 					</Typography>
 
 					<form
-						onSubmit={(e) => checkServer.mutate(e)}
+						onSubmit={(e) => {
+							// Prevent the native submit now; the mutation runs asynchronously.
+							e.preventDefault();
+							checkServer.mutate(e);
+						}}
 						className="flex flex-column"
 						style={{ gap: "1em", width: "100%" }}
 					>
