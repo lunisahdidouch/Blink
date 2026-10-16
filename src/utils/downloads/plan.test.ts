@@ -116,6 +116,7 @@ describe("buildSubtitles", () => {
 					DisplayTitle: "French",
 				},
 				{ Type: "Subtitle", Index: 4, Codec: "dvd_subtitle" },
+				{ Type: "Subtitle", Index: 5, Codec: "PGSSUB" },
 			],
 		};
 		const { subtitles, assets } = buildSubtitles(
@@ -129,6 +130,7 @@ describe("buildSubtitles", () => {
 			[2, "subs/2.ass", false],
 			[3, "subs/3.vtt", false],
 			[4, null, true],
+			[5, "subs/5.sup", false],
 		]);
 		expect(subtitles[0].isDefault).toBe(true);
 		expect(assets).toEqual([
@@ -139,6 +141,11 @@ describe("buildSubtitles", () => {
 			{
 				url: "http://s/Videos/item1/ms1/Subtitles/3/0/Stream.vtt",
 				relPath: "subs/3.vtt",
+			},
+			{
+				// Jellyfin serves PGS as .pgssub only; saved as .sup
+				url: "http://s/Videos/item1/ms1/Subtitles/5/0/Stream.pgssub",
+				relPath: "subs/5.sup",
 			},
 		]);
 	});

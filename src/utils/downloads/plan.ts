@@ -94,6 +94,15 @@ export function subtitleExt(codec: string | null | undefined): string | null {
 	}
 }
 
+/**
+ * Format to request from `/Subtitles/{index}/0/Stream.{format}`. Jellyfin converts text
+ * subtitles to the requested format, but serves PGS only as `pgssub` (`sup` returns 400).
+ * The file is still saved as `.sup`.
+ */
+export function subtitleRequestFormat(ext: string): string {
+	return ext === "sup" ? "pgssub" : ext;
+}
+
 /** Pick a file extension from Jellyfin's container string (e.g. "mov,mp4,m4a,3gp"). */
 export function containerExt(container: string | null | undefined): string {
 	const parts = (container ?? "")
@@ -141,7 +150,7 @@ export function buildSubtitles(
 		});
 		if (relPath) {
 			assets.push({
-				url: `${api.basePath}/Videos/${itemId}/${source.Id}/Subtitles/${s.Index}/0/Stream.${ext}`,
+				url: `${api.basePath}/Videos/${itemId}/${source.Id}/Subtitles/${s.Index}/0/Stream.${subtitleRequestFormat(ext)}`,
 				relPath,
 			});
 		}
