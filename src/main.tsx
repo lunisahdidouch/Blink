@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import ReactDOM from "react-dom/client";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
@@ -72,9 +72,20 @@ function ProviderWrapper() {
 		s.currentUser,
 		s.fetchCurrentUser,
 	]);
+	// Reload the user whenever the access token changes (sign-in to another server or
+	// account in the same session); otherwise requests would carry the previous user's id.
+	const userTokenRef = useRef<string | undefined>(undefined);
 	useEffect(() => {
-		if (api?.accessToken && !user?.Id) {
-			fetchCurrentUser(api);
+		if (!api?.accessToken) return;
+		if (!user?.Id || userTokenRef.current !== api.accessToken) {
+			// Different server or account: drop cached data of the previous one (including
+			// the current-server id downloads are namespaced by) and refetch.
+			const switched =
+				!!userTokenRef.current && userTokenRef.current !== api.accessToken;
+			userTokenRef.current = api.accessToken;
+			fetchCurrentUser(api).then(() => {
+				if (switched) queryClient.resetQueries();
+			});
 		}
 	}, [api, user, fetchCurrentUser]);
 	// Push watch progress recorded during offline playback (D10, §7).
