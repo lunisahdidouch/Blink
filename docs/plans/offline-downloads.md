@@ -492,9 +492,19 @@ Still to do here: run the same three files inside Blink's player via `pnpm tauri
 
 Bugs found and fixed during QA: HLS downloads got a progressive MKV stream on 12.1 (now an HLS-only device profile); an offline exit could lose the position to an earlier slow save (saves are now queued and local-first); "Retry connection" after an offline start didn't sync (user never loaded); paused rows showed stale bytes after a restart.
 
-Not covered: PGS subtitles, media-segment intro skip (the test server has no segments), "Original" + not direct-playable (`mayNotPlay` warning, since everything direct-plays on this PC), macOS/Linux smoke tests.
+**Pass on the user's own Jellyfin 12.1 server (Test account, non-admin, downloads allowed), 2026-10-16:**
 
-Unrelated issue seen: the existing add-server and login forms reload the page on submit. `preventDefault()` runs inside an async mutation, too late. That's outside downloads, so it's left as a follow-up.
+| Item | Result |
+|---|---|
+| "Love, Death & Robots: All Through the House" (H.264 + E-AC3 Atmos 5.1, 31 SRT tracks, 202 MB) | PASS: `file` mode in 5 s; all 31 subtitle tracks and 3 images saved; plays offline with E-AC3 audio decoding; English SDH VTT loads (54 cues) |
+| "Modern Family: Manny Get Your Gun" (HEVC 10-bit + 3 PGS, 621 MB) | First attempt: all PGS tracks `unavailable` (`Stream.sup` returns 400). Fixed: Blink now requests `Stream.pgssub` (saved as `.sup`). After the fix all 3 download, and the English PGS track renders offline via libpgs |
+| Media segments | None on this server for the items tested, so intro skip is still untested |
+
+Also found while signing in: Blink kept the previous user in memory when you sign in to another server in the same session (403 on Home; downloads could be planned for the wrong user/server). Fixed: the user is reloaded and the query cache reset when the access token changes.
+
+Not covered: media-segment intro skip (no segments on either server), "Original" + not direct-playable (`mayNotPlay` warning, since everything direct-plays on this PC), macOS/Linux smoke tests.
+
+Fixed along the way (outside downloads, it blocked signing in): the add-server and login forms reloaded the page on submit, because `preventDefault()` ran inside an async mutation.
 
 **Implementation status (updated 2026-10-16)**
 
