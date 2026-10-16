@@ -155,7 +155,11 @@ function UserLoginManual() {
 				<form
 					className="flex flex-column"
 					style={{ gap: "1.5em", width: "100%" }}
-					onSubmit={(e) => handleLogin.mutate(e)}
+					onSubmit={(e) => {
+						// Prevent the native submit now; the mutation runs asynchronously.
+						e.preventDefault();
+						handleLogin.mutate(e);
+					}}
 				>
 					<TextField
 						variant="outlined"

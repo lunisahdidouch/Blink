@@ -1,4 +1,4 @@
-import { getPlaystateApi } from "@jellyfin/sdk/lib/utils/api/playstate-api";
+import { reportPlaystate } from "@/utils/downloads/playstate";
 import { IconButton, Slider, Typography } from "@mui/material";
 import { WebviewWindow as appWindow } from "@tauri-apps/api/webviewWindow";
 import { AnimatePresence, motion } from "motion/react";
@@ -152,19 +152,8 @@ const VideoPlayerControls = ({
 		appWindow.getCurrent().setFullscreen(false);
 
 		history.back();
-		if (!api) {
-			throw Error("API is not available, cannot report playback stopped.");
-		}
-		// Report Jellyfin server: Playback has ended/stopped
-		getPlaystateApi(api).reportPlaybackStopped({
-			playbackStopInfo: {
-				Failed: false,
-				ItemId: itemId,
-				MediaSourceId: mediaSourceId,
-				PlaySessionId: playsessionId,
-				PositionTicks: secToTicks(getCurrentTime() ?? 0),
-			},
-		});
+		// Report playback stopped (reads the store before it is reset below)
+		reportPlaystate("stop", api, secToTicks(getCurrentTime() ?? 0));
 		usePlaybackStore.setState(usePlaybackStore.getInitialState());
 		clearQueue();
 	}, [api, mediaSourceId, playsessionId, itemId]);

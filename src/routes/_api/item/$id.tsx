@@ -17,6 +17,7 @@ import "./item.scss";
 
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useShallow } from "zustand/shallow";
+import DownloadButton from "@/components/buttons/downloadButton";
 import LikeButton from "@/components/buttons/likeButton";
 import MarkPlayedButton from "@/components/buttons/markPlayedButton";
 import PlayButton from "@/components/buttons/playButton";
@@ -311,6 +312,10 @@ function ItemDetail() {
 								queryKey={["item", id]}
 								isPlayed={item.data.UserData?.Played}
 								userId={user?.Id}
+							/>
+							<DownloadButton
+								item={item.data}
+								defaultAudioTrack={selectedAudioTrack}
 							/>
 						</div>
 					</div>

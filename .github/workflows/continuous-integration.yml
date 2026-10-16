@@ -46,6 +46,9 @@ jobs:
                # - name: Lint
                #   run: pnpm run lint
 
+               - name: Unit tests
+                 run: pnpm test
+
                - name: Build
                  run: pnpm run build
 
@@ -105,6 +108,13 @@ jobs:
 
                - name: Install dependencies
                  run: pnpm install --no-frozen-lockfile
+
+               # tauri::generate_context! embeds ../dist, so build the frontend first.
+               - name: Rust tests
+                 shell: bash
+                 run: |
+                      pnpm run build
+                      cargo test --manifest-path src-tauri/Cargo.toml
 
                - name: Build app
                  run: pnpm run tauri build --debug

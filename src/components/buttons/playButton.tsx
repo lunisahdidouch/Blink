@@ -14,6 +14,10 @@ import { useSnackbar } from "notistack";
 import React, { type MouseEvent, memo } from "react"; // Import memo
 import type PlayResult from "@//utils/types/playResult";
 import { getRuntimeCompact } from "@/utils/date/time";
+import { describeDownloadError } from "@/utils/downloads/format";
+import { useCurrentServer, useDownloadSettings } from "@/utils/downloads/hooks";
+import { usePlayDownloaded } from "@/utils/downloads/localPlayback";
+import { useDownload } from "@/utils/downloads/store";
 import { getNextEpisode, getPlaybackInfo } from "@/utils/methods/playback";
 import { useApiInContext } from "@/utils/store/api";
 import { generateAudioStreamUrl, playAudio } from "@/utils/store/audioPlayback";
@@ -85,6 +89,18 @@ const PlayButton = ({
 	const playPhotos = usePhotosPlayback((s) => s.playPhotos);
 
 	const { enqueueSnackbar } = useSnackbar();
+
+	// Prefer a completed download of this exact episode/movie over streaming (D12).
+	const downloadSettings = useDownloadSettings();
+	const currentServer = useCurrentServer();
+	const localCopy = useDownload(currentServer.data?.id, item?.Id);
+	const playDownloaded = usePlayDownloaded();
+	const playLocally =
+		!audio &&
+		(itemType === BaseItemKind.Episode || itemType === BaseItemKind.Movie) &&
+		(item?.Type === BaseItemKind.Episode || item?.Type === BaseItemKind.Movie) &&
+		downloadSettings.data?.preferLocal !== false &&
+		localCopy?.status === "completed";
 
 	const itemQuery = useMutation({
 		mutationKey: ["playButton", item?.Id, userId],
@@ -199,6 +215,12 @@ const PlayButton = ({
 		currentEpisodeId?: string | undefined,
 	) => {
 		e.stopPropagation();
+		if (playLocally && localCopy && (!currentEpisodeId || currentEpisodeId === item.Id)) {
+			playDownloaded(localCopy).catch((error) =>
+				enqueueSnackbar(describeDownloadError(error), { variant: "error" }),
+			);
+			return;
+		}
 		itemQuery.mutate(currentEpisodeId);
 	};
 	const currentEpisode = useQuery({

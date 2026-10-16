@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import ReactDOM from "react-dom/client";
 // Import the generated route tree
 import { routeTree } from "./routeTree.gen";
@@ -10,6 +10,13 @@ import {
 	useApiInContext,
 } from "./utils/store/api";
 import { CentralProvider, useCentralStore } from "./utils/store/central";
+import { useDownloadsStore } from "./utils/downloads/store";
+import { flushPendingPlaystate } from "./utils/downloads/sync";
+import { getDefaultServer } from "./utils/storage/servers";
+import {
+	getDownloadSettings,
+	setDownloadSetting,
+} from "./utils/storage/downloads";
 
 const queryClient = new QueryClient({
 	defaultOptions: {
@@ -65,11 +72,34 @@ function ProviderWrapper() {
 		s.currentUser,
 		s.fetchCurrentUser,
 	]);
+	// Reload the user whenever the access token changes (sign-in to another server or
+	// account in the same session); otherwise requests would carry the previous user's id.
+	const userTokenRef = useRef<string | undefined>(undefined);
 	useEffect(() => {
-		if (api?.accessToken && !user?.Id) {
-			fetchCurrentUser(api);
+		if (!api?.accessToken) return;
+		if (!user?.Id || userTokenRef.current !== api.accessToken) {
+			// Different server or account: drop cached data of the previous one (including
+			// the current-server id downloads are namespaced by) and refetch.
+			const switched =
+				!!userTokenRef.current && userTokenRef.current !== api.accessToken;
+			userTokenRef.current = api.accessToken;
+			fetchCurrentUser(api).then(() => {
+				if (switched) queryClient.resetQueries();
+			});
 		}
 	}, [api, user, fetchCurrentUser]);
+	// Push watch progress recorded during offline playback (D10, §7).
+	useEffect(() => {
+		if (!api?.accessToken || !user?.Id) return;
+		const userId = user.Id;
+		getDefaultServer()
+			.then((serverId) =>
+				serverId
+					? flushPendingPlaystate(api, serverId, userId, queryClient)
+					: 0,
+			)
+			.catch((error) => console.warn("Playstate sync failed", error));
+	}, [api?.accessToken, user?.Id]);
 	useEffect(() => {
 		if (api) {
 			console.log(`API is set - Route ${window.location.pathname}`);
@@ -94,8 +124,26 @@ function ProviderWrapper() {
 	);
 }
 
+/**
+ * Load downloads before the first render so route guards can use them offline.
+ * A failure here must never keep the app from starting.
+ */
+const initDownloads = async () => {
+	try {
+		const { root } = await getDownloadSettings();
+		await useDownloadsStore.getState().init(root);
+		const resolved = useDownloadsStore.getState().root;
+		// A non-empty foreign folder resolves to its "Blink Downloads" subfolder.
+		if (root && resolved && resolved !== root) {
+			await setDownloadSetting("root", resolved);
+		}
+	} catch (error) {
+		console.error("Downloads are unavailable:", error);
+	}
+};
+
 const init = async () => {
-	const initialApi = await initializeApi();
+	const [initialApi] = await Promise.all([initializeApi(), initDownloads()]);
 
 	ReactDOM.createRoot(document.getElementById("root")!).render(
 		<React.StrictMode>

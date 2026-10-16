@@ -7,7 +7,8 @@ license = "GPL-3.0-only"
 repository = "https://github.com/prayag17/Blink/"
 default-run = "blink"
 edition = "2021"
-rust-version = "1.59"
+# 1.85+: the lockfile already pulls in edition-2024 crates
+rust-version = "1.85"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -30,6 +31,21 @@ tauri-plugin-notification = "2.0.0-rc.1"
 tauri-plugin-upload = "2.0.0"
 tauri-plugin-dialog = "2.0.0"
 tauri-plugin-shell = "2.3.5"
+reqwest = { version = "0.12", default-features = false, features = ["stream", "rustls-tls", "json"] }
+tokio = { version = "1", features = ["fs", "io-util", "sync", "time", "macros", "rt-multi-thread", "net"] }
+tokio-util = "0.7"
+futures-util = "0.3"
+axum = "0.8"
+tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.6", features = ["fs", "cors", "set-header"] }
+fs4 = { version = "0.13", features = ["tokio"] }
+rand = "0.9"
+thiserror = "2"
+url = "2"
+
+[dev-dependencies]
+tempfile = "3"
+bytes = "1"
 
 [features]
 # by default Tauri runs in production mode

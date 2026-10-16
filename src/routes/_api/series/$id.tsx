@@ -22,6 +22,8 @@ import "./series.scss";
 
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import LikeButton from "@/components/buttons/likeButton";
+import DownloadButton from "@/components/buttons/downloadButton";
+import DownloadSeasonButton from "@/components/buttons/downloadSeasonButton";
 import MarkPlayedButton from "@/components/buttons/markPlayedButton";
 import PlayButton from "@/components/buttons/playButton";
 import TrailerButton from "@/components/buttons/trailerButton";
@@ -669,6 +671,10 @@ function SeriesTitlePage() {
 										itemName={currentSeasonItem.data?.Name}
 									/>
 								)}
+								<DownloadSeasonButton
+									episodes={episodes.data?.Items}
+									seasonName={currentSeasonItem.data?.Name}
+								/>
 								<TextField
 									value={currentSeasonNumber}
 									onChange={(e) => {
@@ -852,6 +858,7 @@ function SeriesTitlePage() {
 													queryKey={["item", id]}
 													userId={user?.Id}
 												/>
+												<DownloadButton item={episode} />
 											</div>
 										</motion.div>
 									);

@@ -40,8 +40,10 @@ const VideoPlayerSettingsMenu = ({
 		setIsBuffering,
 		showStatsForNerds,
 		toggleShowStatsForNerds,
+		isLocal,
 	} = usePlaybackStore(
 		useShallow((state) => ({
+			isLocal: state.origin === "local",
 			mediaSource: state.mediaSource,
 			setIsBuffering: state.setIsBuffering,
 			showStatsForNerds: state.playerState.showStatsForNerds,
@@ -118,7 +120,10 @@ const VideoPlayerSettingsMenu = ({
 				value={mediaSource.audio?.track}
 				onChange={handleAudioTrackChange}
 				fullWidth
-				disabled={audioTackIsChanging}
+				disabled={audioTackIsChanging || isLocal}
+				helperText={
+					isLocal ? "Audio track is fixed for downloaded items" : undefined
+				}
 			>
 				{mediaSource.audio?.allTracks?.map((sub) => (
 					<MenuItem key={sub.Index} value={sub.Index}>
